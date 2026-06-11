@@ -4,23 +4,20 @@ import viteLogo from './assets/vite.svg'
 import heroImg from './assets/hero.png'
 import './App.css'
 
-const MovieName = ({ title }) => {
+const Card = ({ title }) => {
   return (
-    <div className="App">
-      <h5>{title}</h5>
+    <div className="card">
+      <h2>{title}</h2>
     </div>
   )
 }
 
 const App = () => {
   return (
-    <div>
-    <h2>React Crash Course 2026</h2>
-
-    <MovieName title="Dune: Part Two" />
-    <MovieName title="Arrival" />
-    <MovieName title="Interstellar" />
-    
+    <div className="card-container">
+      <Card title="Dune: Part Two" />
+      <Card title="Arrival" />
+      <Card title="Interstellar" />
     </div>
   )
 }
