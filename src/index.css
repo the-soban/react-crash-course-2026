@@ -40,7 +40,8 @@
   }
 
   header {
-    @apply sm:mt-10 mt-5;
+    /* @apply sm:mt-10 mt-5; */
+    @apply sm:mt-10 mt-5 flex flex-col items-center gap-0;
   }
 
   header img {
