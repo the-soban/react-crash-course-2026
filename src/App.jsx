@@ -1,8 +1,10 @@
 import React from 'react'
 import { useState, useEffect } from 'react'
+import { useDebounce } from 'react-use'
 import Search from './components/Search'
 import Spinner from './components/Spinner';
 import MovieCard from './components/MovieCard';
+import { updateSearchCount } from './appwrite';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -21,13 +23,18 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
-  const fetchMovies = async () => {
+  useDebounce(() => setDebouncedSearchTerm(searchTerm), 500, [searchTerm]);
+
+  const fetchMovies = async (query = '') => {
     setIsLoading(true);
     setErrorMessage('');
     
     try {
-      const endpoint = `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+      const endpoint = query
+        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -45,6 +52,11 @@ const App = () => {
 
       setMovieList (data.results || []);
 
+      if (query && data.results.length > 0){
+        await updateSearchCount(query, data.results[0]);
+      }
+      // updateSearchCount();
+
     } catch (error){
       console.error(`Error fetching movies: ${error}`);
       setErrorMessage(`Failed to load movies. Please try again later.`);
@@ -54,8 +66,8 @@ const App = () => {
   }
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    fetchMovies(debouncedSearchTerm);
+  }, [debouncedSearchTerm]);
 
 
 
@@ -73,6 +85,11 @@ const App = () => {
           </h1>
         <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
+
+        <div className="search-results-wrapper">
+          {searchTerm ? <span className="search-results-span">Search results for: </span> : null}
+          <h4 className="text-white">{searchTerm}</h4>
+        </div>
 
         <section className="all-movies">
           <h2 className="mt-[32px]">All Movies</h2>
@@ -96,12 +113,6 @@ const App = () => {
         </section>
 
         <p>{errorMessage}</p>
-
-
-        <div className="search-results-wrapper">
-          {searchTerm ? <span className="search-results-span">Search results for: </span> : null}
-          <h1 className="text-white">{searchTerm}</h1>
-        </div>
 
       </div>
 
