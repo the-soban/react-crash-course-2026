@@ -41,16 +41,16 @@
 
   header {
     /* @apply sm:mt-10 mt-5; */
-    @apply sm:mt-10 mt-5 flex flex-col items-center gap-0;
+    @apply sm:mt-5 mt-0 flex flex-col items-center gap-0;
   }
 
-  header img {
-    @apply w-full max-w-lg h-auto object-contain mx-auto drop-shadow-md;
+  .heroImg {
+    @apply w-full max-w-lg h-auto object-contain -mt-8 drop-shadow-md;
   }
 
   .logoImg {
     /* @apply w-full max-w-lg h-auto object-contain mx-auto drop-shadow-md; */
-    @apply w-fit h-auto object-contain mx-auto drop-shadow-md;
+    @apply w-fit h-auto object-contain mx-auto -mt-4 drop-shadow-md;
   }
 }
 
@@ -60,14 +60,14 @@
   }
 
   .wrapper {
-    @apply px-5 py-12 xs:p-10 max-w-7xl mx-auto flex flex-col relative z-10;
+    @apply px-5 py-12 xs:p-10 max-w-7xl mx-auto flex flex-col relative z-10 gap-0;
   }
 
   .trending {
     @apply mt-20;
 
     & ul {
-      @apply flex flex-row overflow-y-auto gap-5 -mt-10 w-full hide-scrollbar;
+      @apply flex flex-row overflow-y-auto overflow-visible gap-5 -mt-10 w-full hide-scrollbar;
     }
 
     & ul li {
