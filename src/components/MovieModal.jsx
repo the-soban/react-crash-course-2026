@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import Spinner from './Spinner';
 import MovieCard from './MovieCard';
 
-const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
+// 1. Notice we added userMovies and onToggleMovie to the top line so this file can receive them
+const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect, userMovies, onToggleMovie }) => {
   const [details, setDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Lock scrolling on the main page when the modal is open
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => {
@@ -19,7 +19,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
       setIsLoading(true);
       try {
         const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
-        // Trending movies usually store the TMDB ID in movie_id, standard endpoints return id
         const movieId = movie.id || movie.movie_id;
 
         if (!movieId) {
@@ -70,7 +69,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
           </div>
         ) : details ? (
           <>
-            {/* Close Button */}
             <button
               onClick={onClose}
               className="absolute top-4 right-4 z-50 w-10 h-10 bg-[#181818] border border-gray-600 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-colors"
@@ -81,7 +79,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
               </svg>
             </button>
 
-            {/* Banner Section */}
             <div className="relative w-full h-[40vh] sm:h-[60vh]">
               <img
                 src={
@@ -94,10 +91,8 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
                 alt={details.title}
                 className="w-full h-full object-cover"
               />
-              {/* Gradient Overlay for seamless Netflix blend */}
               <div className="absolute inset-0 bg-gradient-to-t from-[#141414] via-[#141414]/40 to-transparent" />
 
-              {/* Title and main info superimposed on the banner */}
               <div className="absolute bottom-0 left-0 px-6 sm:px-10 pt-6 sm:pt-10 pb-0 sm:pb-2 w-full translate-y-2 sm:translate-y-4">
                 <h2 className="text-3xl sm:text-5xl font-bold mb-4 text-white shadow-sm">{details.title}</h2>
                 <div className="flex flex-wrap items-center gap-4 text-sm sm:text-base font-medium text-gray-300">
@@ -114,15 +109,12 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
               </div>
             </div>
 
-            {/* Details Content Section */}
             <div className="p-6 sm:p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Left Column: Overview, Genres, Cast, and Director */}
               <div className="md:col-span-2 space-y-6">
                 <p className="text-[14px] sm:text-lg text-gray-200 leading-relaxed">
                   {details.overview || 'No overview available.'}
                 </p>
 
-                {/* Genres */}
                 {details.genres && details.genres.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {details.genres.map((genre) => (
@@ -137,9 +129,7 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
                   </div>
                 )}
 
-                {/* Cast and Director */}
                 <div className="space-y-4 pt-4 border-t border-gray-800">
-                  {/* Cast */}
                   {details.credits?.cast?.length > 0 && (
                     <div>
                       <span className="text-gray-500">Cast: </span>
@@ -155,7 +145,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
                       </span>
                     </div>
                   )}
-                  {/* Director */}
                   {details.credits?.crew?.some((c) => c.job === 'Director') && (
                     <div>
                       <span className="text-gray-500">Director: </span>
@@ -174,9 +163,7 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
                 </div>
               </div>
 
-              {/* Right Column: Watch / Search */}
               <div className="space-y-4 text-sm text-gray-400">
-                {/* Streaming Sites Redirects */}
                 <div className="flex flex-col gap-2 pb-2">
                   <span className="text-gray-500">Watch / Search</span>
                   {[
@@ -199,7 +186,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
                       wrapperClass: 'bg-gray-700 hover:bg-gradient-to-r hover:from-[#DD6AF6] hover:to-[#440BA1]'
                     }
                   ].map((site) => {
-                    // Clean the title: remove . , : ; - _ ' " ? / \ and replace with spaces, trim, then encode.
                     const cleanedTitle = (details.title || '').replace(/[.,:;\-_'"?\\/]/g, ' ').replace(/\s+/g, ' ').trim();
                     const query = encodeURIComponent(cleanedTitle);
                     
@@ -222,7 +208,6 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
               </div>
             </div>
 
-            {/* Trailers Section */}
             {details.videos?.results?.some((v) => v.type === 'Trailer' && v.site === 'YouTube') && (
               <div className="px-6 sm:px-10 pb-10">
                 <h3 className="text-2xl font-bold mb-6">Trailer</h3>
@@ -239,24 +224,25 @@ const MovieModal = ({ movie, onClose, onMovieSelect, onGenreSelect }) => {
               </div>
             )}
 
-            {/* More Like This Section */}
             {details.similar?.results?.length > 0 && (
               <div className="px-3 sm:px-10 pb-6 sm:pb-10 border-t border-gray-800 pt-6 sm:pt-8 mt-4">
                 <h3 className="text-2xl font-bold mb-6">More Like This</h3>
                 <ul className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {/* 2. Notice here we are passing the new props straight into the MovieCard */}
                   {details.similar.results.slice(0, 8).map((simMovie) => (
                     <MovieCard 
                       key={simMovie.id} 
                       movie={simMovie} 
                       onClick={() => onMovieSelect(simMovie)} 
                       isModalCard={true}
+                      userMovies={userMovies}
+                      onToggleMovie={onToggleMovie}
                     />
                   ))}
                 </ul>
               </div>
             )}
 
-            {/* TMDB Footer Link */}
             <div className="border-t border-gray-800 py-6 sm:py-8 flex justify-center mt-auto w-full">
               <a
                 href={`https://www.themoviedb.org/movie/${details.id}`}

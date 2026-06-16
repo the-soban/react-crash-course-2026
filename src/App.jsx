@@ -5,7 +5,9 @@ import Search from './components/Search'
 import Spinner from './components/Spinner';
 import MovieCard from './components/MovieCard';
 import MovieModal from './components/MovieModal';
-import { getTrendingMovies, updateSearchCount } from './appwrite';
+import { getTrendingMovies, updateSearchCount, getCurrentUserProfile, logoutUser, getUserMovies, toggleUserMovie } from './appwrite';
+import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -53,6 +55,25 @@ const App = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [selectedGenre, setSelectedGenre] = useState('');
 
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [userMovies, setUserMovies] = useState([]); // Holds the user's tracked movies
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const user = await getCurrentUserProfile();
+      if (user) {
+        setCurrentUser(user);
+        // Fetch their tracked movies and save to state
+        const movies = await getUserMovies(user.$id);
+        setUserMovies(movies || []);
+      }
+    };
+    checkUser();
+  }, []);
+
   const scrollContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -74,6 +95,27 @@ const App = () => {
       const { scrollLeft, scrollWidth, clientWidth } = trendingScrollRef.current;
       setShowTrendingLeft(scrollLeft > 0);
       setShowTrendingRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutUser();
+    setCurrentUser(null);
+    setIsDropdownOpen(false);
+  };
+
+  const handleToggleMovie = async (movie, toggleType, value = null) => {
+    if (!currentUser) {
+      setIsAuthModalOpen(true); // Prompt them to log in if they try to save without an account
+      return;
+    }
+    try {
+      await toggleUserMovie(currentUser.$id, movie, toggleType, value);
+      // Refresh the list immediately so the UI updates
+      const updatedMovies = await getUserMovies(currentUser.$id);
+      setUserMovies(updatedMovies || []);
+    } catch (error) {
+      console.error("Failed to update movie status:", error);
     }
   };
 
@@ -201,13 +243,65 @@ console.log(trendingMovies);
 
       <div className="wrapper">
 
-        <header>
+        <header className="relative w-full flex flex-col items-center">
+          
+          {/* User Profile / Login Button - Top Right */}
+          {/* User Profile / Login Button - Top Right */}
+          <div className="absolute right-0 top-0 mt-4 sm:mt-0 z-50">
+            {currentUser ? (
+              <div className="relative">
+                <button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-3 hover:opacity-80 transition-opacity bg-dark-100 border border-gray-800 rounded-full pl-2 pr-4 py-1"
+                >
+                  <img 
+                    src={currentUser.profile?.avatar_url || '/no-movie.png'} 
+                    alt="Profile" 
+                    className="w-8 h-8 rounded-full object-cover border border-[#de23ff]"
+                  />
+                  <span className="text-sm font-semibold text-white hidden sm:block">
+                    {currentUser.profile?.display_name || 'My Profile'}
+                  </span>
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden animate-fade-in">
+                    <button 
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      Account Settings
+                    </button>
+                    <div className="h-px w-full bg-gray-800 my-1"></div>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button 
+                onClick={() => setIsAuthModalOpen(true)}
+                className="bg-transparent border border-[#de23ff] text-[#cecefb] hover:bg-[#de23ff] hover:text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm"
+              >
+                Sign In
+              </button>
+            )}
+          </div>
+
           <img src="./logo.png" alt="logo" className="logoImg h-[54px]" />
           <img src="./hero.png" alt="hero visual" className="heroImg" />
           <h1>
             Find <span className="text-gradient">Movies</span> You'll Love!
           </h1>
-        <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+          <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
         <div className="search-results-wrapper">
@@ -319,7 +413,13 @@ console.log(trendingMovies);
               <ul>
                 {movieList.map((movie, index) => {
                   return(
-                    <MovieCard key={`${movie.id}-${index}`} movie={movie} onClick={(m) => setSelectedMovie(m)} />
+                    <MovieCard
+                      key={`${movie.id}-${index}`}
+                      movie={movie}
+                      onClick={(m) => setSelectedMovie(m)}
+                      userMovies={userMovies}
+                      onToggleMovie={handleToggleMovie}
+                    />
                   )
                 })}
               </ul>
@@ -357,10 +457,43 @@ console.log(trendingMovies);
             setSelectedMovie(null);
             document.querySelector('.all-movies')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
           }}
+          userMovies={userMovies}                 
+          onToggleMovie={handleToggleMovie}        
         />
       )}
 
       {/* <h1 className="text-3xl font-bold underline">Hello world!</h1> */}
+
+      {/* --- NEW MODALS --- */}
+      {isAuthModalOpen && (
+        <AuthModal 
+          onClose={() => setIsAuthModalOpen(false)} 
+          onLoginSuccess={async () => {
+            const user = await getCurrentUserProfile();
+            setCurrentUser(user);
+          }}
+        />
+      )}
+
+      {/* Profile Modal */}
+      {isProfileModalOpen && currentUser && (
+        <ProfileModal 
+          currentUser={currentUser}
+          userMovies={userMovies}
+          onClose={() => setIsProfileModalOpen(false)}
+          onToggleMovie={handleToggleMovie}
+          onMovieSelect={(movie) => {
+            setSelectedMovie(movie);
+            setIsProfileModalOpen(false);
+          }}
+          onProfileUpdate={async () => {
+            const updatedUser = await getCurrentUserProfile();
+            setCurrentUser(updatedUser);
+          }}
+        />
+      )}
+
+
     </main>
   )
 }
