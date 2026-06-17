@@ -61,6 +61,9 @@ const App = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [userMovies, setUserMovies] = useState([]); // Holds the user's tracked movies
 
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
   useEffect(() => {
     const checkUser = async () => {
       const user = await getCurrentUserProfile();
@@ -148,6 +151,24 @@ const App = () => {
     handleTrendingScroll();
   }, [trendingMovies]);
 
+  // --- NAVBAR SCROLL LOGIC ---
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // If scrolling down AND past the 100px mark, hide it. Otherwise, show it.
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        setIsNavVisible(false);
+      } else {
+        setIsNavVisible(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleWindowScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleWindowScroll);
+  }, [lastScrollY]);
+
   useDebounce(() => {
     setDebouncedSearchTerm(searchTerm);
     if (searchTerm !== '') {
@@ -160,9 +181,13 @@ const App = () => {
     setErrorMessage('');
     
     try {
+      // 1. Get today's exact date in YYYY-MM-DD format so TMDB knows what "today" is
+      const today = new Date().toISOString().split('T')[0];
+
+      // 2. Update the endpoint to use our new sorting and filtering rules
       const endpoint = query
         ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}&page=${pageNum}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc&page=${pageNum}${genreId ? `&with_genres=${genreId}` : ''}`;
+        : `${API_BASE_URL}/discover/movie?sort_by=primary_release_date.desc&primary_release_date.lte=${today}&vote_count.gte=50&page=${pageNum}${genreId ? `&with_genres=${genreId}` : ''}`;
 
       const response = await fetch(endpoint, API_OPTIONS);
 
@@ -178,18 +203,18 @@ const App = () => {
         return;
       }
 
-      if (pageNum === 1) {
-        setMovieList(data.results || []);
-      } else {
-        setMovieList((prev) => [...prev, ...(data.results || [])]);
-      }
+      // if (pageNum === 1) {
+      //   setMovieList(data.results || []);
+      // } else {
+      //   setMovieList((prev) => [...prev, ...(data.results || [])]);
+      // }
+      setMovieList(data.results || []);
       
       setTotalPages(data.total_pages || 1);
 
       if (query && data.results.length > 0 && pageNum === 1){
         await updateSearchCount(query, data.results[0]);
       }
-      // updateSearchCount();
 
     } catch (error){
       console.error(`Error fetching movies: ${error}`);
@@ -223,12 +248,43 @@ const App = () => {
     }
   };
 
-  const loadMore = () => {
-    if (page < totalPages) {
-      const nextPage = page + 1;
-      setPage(nextPage);
-      fetchMovies(debouncedSearchTerm, nextPage, selectedGenre);
+  // const loadMore = () => {
+  //   if (page < totalPages) {
+  //     const nextPage = page + 1;
+  //     setPage(nextPage);
+  //     fetchMovies(debouncedSearchTerm, nextPage, selectedGenre);
+  //   }
+  // };
+
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setPage(newPage);
+      fetchMovies(debouncedSearchTerm, newPage, selectedGenre);
+      // Instantly scroll the user back to the top of the movies section!
+      document.querySelector('.all-movies')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
+  };
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 5) {
+      // If 5 or fewer pages, just show them all
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      // If we are near the beginning
+      if (page <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } 
+      // If we are near the end
+      else if (page >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } 
+      // If we are somewhere in the middle
+      else {
+        pages.push(1, '...', page - 1, page, page + 1, '...', totalPages);
+      }
+    }
+    return pages;
   };
 
   useEffect(() => {
@@ -241,32 +297,56 @@ console.log(trendingMovies);
     <main>
       <div className="pattern" />
 
-      <div className="wrapper">
+      {/* --- NEW FLOATING NAVBAR --- */}
+      <nav 
+        className={`fixed top-0 left-0 w-full z-50 pb-6 transition-transform duration-300 ${
+          isNavVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
+        {/* The progressive blur background layer we made in CSS */}
+        <div className="progressive-nav"></div>
 
-        <header className="relative w-full flex flex-col items-center">
+        {/* Navbar Content: Logo Left, Profile Right */}
+        <div className="max-w-7xl mx-auto px-5 sm:px-10 pt-4 sm:pt-6 flex justify-between items-center relative z-10">
           
-          {/* User Profile / Login Button - Top Right */}
-          {/* User Profile / Login Button - Top Right */}
-          <div className="absolute right-0 top-0 mt-4 sm:mt-0 z-50">
+          <img 
+            src="./logo.png" 
+            alt="logo" 
+            className="h-[30px] sm:h-[40px] object-contain cursor-pointer drop-shadow-md hover:scale-105 transition-transform" 
+            onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
+          />
+
+          {/* User Profile / Login Button - Now cleanly aligned to the right! */}
+          <div>
             {currentUser ? (
               <div className="relative">
                 <button 
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-3 hover:opacity-80 transition-opacity bg-dark-100 border border-gray-800 rounded-full pl-2 pr-4 py-1"
+                  className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity bg-[#0f0d23]/80 backdrop-blur-sm border border-gray-800 rounded-full pl-3 sm:pl-2 pr-3 sm:pr-4 py-1"
                 >
+                  {/* NEW: 3-dots menu icon (Mobile Only) */}
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-5 w-5 text-gray-400 block sm:hidden" 
+                    viewBox="0 0 20 20" 
+                    fill="currentColor"
+                  >
+                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                  </svg>
+
                   <img 
                     src={currentUser.profile?.avatar_url || '/no-movie.png'} 
                     alt="Profile" 
                     className="w-8 h-8 rounded-full object-cover border border-[#de23ff]"
                   />
                   <span className="text-sm font-semibold text-white hidden sm:block">
-                    {currentUser.profile?.display_name || 'My Profile'}
+                    {currentUser.profile?.display_name || currentUser.name || 'My Profile'}
                   </span>
                 </button>
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden animate-fade-in">
+                  <div className="absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden animate-fade-in z-50">
                     <button 
                       onClick={() => {
                         setIsDropdownOpen(false);
@@ -289,14 +369,20 @@ console.log(trendingMovies);
             ) : (
               <button 
                 onClick={() => setIsAuthModalOpen(true)}
-                className="bg-transparent border border-[#de23ff] text-[#cecefb] hover:bg-[#de23ff] hover:text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm"
+                className="bg-[#0f0d23]/80 backdrop-blur-sm border border-[#de23ff] text-[#cecefb] hover:bg-[#de23ff] hover:text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm shadow-[0_0_15px_rgba(222,35,255,0.2)] hover:shadow-[0_0_20px_rgba(222,35,255,0.4)]"
               >
                 Sign In
               </button>
             )}
           </div>
+        </div>
+      </nav>
 
-          <img src="./logo.png" alt="logo" className="logoImg h-[54px]" />
+      {/* --- RESTRUCTURED WRAPPER --- */}
+      <div className="wrapper pt-24 sm:pt-32">
+        
+        {/* The Hero Content Area */}
+        <header className="flex flex-col items-center gap-0">
           <img src="./hero.png" alt="hero visual" className="heroImg" />
           <h1>
             Find <span className="text-gradient">Movies</span> You'll Love!
@@ -404,7 +490,6 @@ console.log(trendingMovies);
           </div>
 
           {isLoading && page === 1 ? (
-            // <p className="text-white">Loading movies...</p>
             <Spinner />
           ) : errorMessage ? (
             <p className="text-red-500">{errorMessage}</p>
@@ -430,17 +515,59 @@ console.log(trendingMovies);
                 </div>
               )}
 
-              {!isLoading && page < totalPages && (
-                <div className="mt-8 flex justify-center">
-                  <button onClick={loadMore} className="bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:border-white font-semibold py-3 px-8 rounded-lg transition-colors duration-300 shadow-sm">
-                    Load More
+              {/* NEW PAGINATION BAR */}
+              {!isLoading && totalPages > 1 && (
+                <div className="mt-12 flex flex-wrap justify-center items-center gap-2 sm:gap-3">
+                  {/* Previous Button (Circular) */}
+                  <button
+                    disabled={page === 1}
+                    onClick={() => handlePageChange(page - 1)}
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:border-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    aria-label="Previous Page"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </button>
+
+                  {/* Dynamic Page Numbers (Circular & Ellipsis) */}
+                  <div className="flex gap-1 sm:gap-2 items-center">
+                    {getPageNumbers().map((num, index) => (
+                      num === '...' ? (
+                        <span key={`ellipsis-${index}`} className="w-8 h-10 sm:w-10 flex items-center justify-center text-gray-400 font-medium">
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={num}
+                          onClick={() => handlePageChange(num)}
+                          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-medium transition-colors ${
+                            page === num
+                              ? 'bg-[#de23ff] text-white shadow-lg shadow-[#de23ff]/30 border border-[#de23ff]'
+                              : 'bg-transparent border border-gray-800 text-gray-400 hover:bg-gray-800 hover:text-white'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      )
+                    ))}
+                  </div>
+
+                  {/* Next Button (Circular) */}
+                  <button
+                    disabled={page === totalPages}
+                    onClick={() => handlePageChange(page + 1)}
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-full flex items-center justify-center bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:border-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    aria-label="Next Page"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </button>
                 </div>
               )}
             </>
           )}
-
-          {/* {errorMessage && <p className="text-red-500">{errorMessage}</p>} */}
         </section>
 
         <p>{errorMessage}</p>
@@ -461,8 +588,6 @@ console.log(trendingMovies);
           onToggleMovie={handleToggleMovie}        
         />
       )}
-
-      {/* <h1 className="text-3xl font-bold underline">Hello world!</h1> */}
 
       {/* --- NEW MODALS --- */}
       {isAuthModalOpen && (
@@ -492,7 +617,6 @@ console.log(trendingMovies);
           }}
         />
       )}
-
 
     </main>
   )
