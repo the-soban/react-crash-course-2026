@@ -95,9 +95,10 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
     >
       <div className="bg-[#0f0d23] border border-gray-800 w-full max-w-6xl rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl h-[85vh] animate-fade-in relative">
         
+        {/* Close Button - Now with text-white explicitly set! */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-50 w-10 h-10 bg-[#181818] border border-gray-600 rounded-full flex items-center justify-center hover:bg-white hover:text-black transition-colors"
+          className="absolute top-4 right-4 z-50 w-10 h-10 bg-[#181818] border border-gray-600 rounded-full flex items-center justify-center text-white hover:bg-white hover:text-black transition-colors"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -118,7 +119,8 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
             </div>
           </div>
 
-          <nav className="flex md:flex-col gap-2 overflow-x-auto hide-scrollbar">
+          {/* Navigation - custom-scrollbar added here for mobile side-scrolling */}
+          <nav className="flex md:flex-col gap-2 overflow-x-auto custom-scrollbar pb-3 md:pb-0">
             <button 
               onClick={() => setActiveTab('settings')}
               className={`px-4 py-3 rounded-lg text-left whitespace-nowrap font-medium transition-colors ${activeTab === 'settings' ? 'bg-[#de23ff] text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white'}`}
@@ -156,8 +158,8 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
           </nav>
         </div>
 
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto p-6 md:p-10 relative">
+        {/* Main Content Area - custom-scrollbar added here! */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-6 md:p-10 relative">
           
           {message.text && (
             <div className={`mb-6 p-4 rounded-lg text-sm border ${message.type === 'error' ? 'bg-red-500/10 border-red-500/50 text-red-500' : 'bg-green-500/10 border-green-500/50 text-green-400'}`}>
@@ -244,7 +246,13 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
               {savedMovies.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {savedMovies.map(movie => (
-                    <MovieCard key={movie.id} movie={movie} userMovies={userMovies} onToggleMovie={onToggleMovie} onClick={() => onMovieSelect(movie)} />
+                    <MovieCard 
+                      key={movie.id} 
+                      movie={movie} 
+                      userMovies={userMovies} 
+                      onToggleMovie={onToggleMovie} 
+                      onClick={() => onMovieSelect(movie)} 
+                    />
                   ))}
                 </div>
               ) : (
@@ -260,7 +268,13 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
               {watchedMovies.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {watchedMovies.map(movie => (
-                    <MovieCard key={movie.id} movie={movie} userMovies={userMovies} onToggleMovie={onToggleMovie} onClick={() => onMovieSelect(movie)} />
+                    <MovieCard 
+                      key={movie.id} 
+                      movie={movie} 
+                      userMovies={userMovies} 
+                      onToggleMovie={onToggleMovie} 
+                      onClick={() => onMovieSelect(movie)} 
+                    />
                   ))}
                 </div>
               ) : (
@@ -276,7 +290,13 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
               {likedMovies.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {likedMovies.map(movie => (
-                    <MovieCard key={movie.id} movie={movie} userMovies={userMovies} onToggleMovie={onToggleMovie} onClick={() => onMovieSelect(movie)} />
+                    <MovieCard 
+                      key={movie.id} 
+                      movie={movie} 
+                      userMovies={userMovies} 
+                      onToggleMovie={onToggleMovie} 
+                      onClick={() => onMovieSelect(movie)} 
+                    />
                   ))}
                 </div>
               ) : (
@@ -292,7 +312,13 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
               {dislikedMovies.length > 0 ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {dislikedMovies.map(movie => (
-                    <MovieCard key={movie.id} movie={movie} userMovies={userMovies} onToggleMovie={onToggleMovie} onClick={() => onMovieSelect(movie)} />
+                    <MovieCard 
+                      key={movie.id} 
+                      movie={movie} 
+                      userMovies={userMovies} 
+                      onToggleMovie={onToggleMovie} 
+                      onClick={() => onMovieSelect(movie)} 
+                    />
                   ))}
                 </div>
               ) : (

@@ -167,6 +167,28 @@
   }
 }
 
+@utility custom-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #3b3572 transparent;
+
+  /* WebKit (Chrome, Safari, Edge) */
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #3b3572;
+    border-radius: 10px;
+  }
+  &::-webkit-scrollbar-thumb:hover {
+    background: #de23ff;
+  }
+}
+
 .search-results-wrapper {
   display: flex;
   flex-direction: column;
