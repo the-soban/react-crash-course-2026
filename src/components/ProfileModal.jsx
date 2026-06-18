@@ -174,36 +174,90 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
               
               <form onSubmit={handleUpdateProfile} className="space-y-6 mb-10 pb-10 border-b border-gray-800">
                 <h3 className="text-xl font-semibold text-white">Public Profile</h3>
-                <div className="flex items-center gap-6">
-                  <div 
-                    className="w-24 h-24 rounded-full border-2 border-gray-700 bg-[#030014] overflow-hidden cursor-pointer flex items-center justify-center hover:border-[#de23ff] transition-colors relative group shrink-0"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    {avatarPreview ? (
-                      <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-gray-500">Upload</span>
-                    )}
-                    <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center">
-                      <span className="text-xs font-semibold text-white">Change</span>
+                
+                {/* Display Name Input */}
+                <div>
+                  <label className="text-gray-300 text-sm mb-1 block">Display Name</label>
+                  <input 
+                    type="text" value={displayName} onChange={(e) => setDisplayName(e.target.value)}
+                    className="w-full bg-[#cecefb]/5 border border-transparent focus:border-[#a8b5db]/30 rounded-lg px-4 py-3 text-white outline-none transition-colors"
+                  />
+                </div>
+
+                {/* Avatar Selection Area */}
+                <div className="pt-2">
+                  <label className="text-gray-300 text-sm mb-2 block">Change Avatar</label>
+                  
+                  <div className="relative mb-5 flex items-center">
+                    {/* Left Gradient & Arrow */}
+                    <div className="absolute top-0 left-0 bottom-0 w-12 bg-gradient-to-r from-[#0f0d23] to-transparent pointer-events-none flex items-center justify-start z-10">
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.parentElement.nextElementSibling.scrollBy({ left: -150, behavior: 'smooth' });
+                        }} 
+                        className="pointer-events-auto outline-none text-gray-400 hover:text-white transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                      </button>
+                    </div>
+
+                    {/* Pre-made Avatars Array (Added py-3 to stop clipping) */}
+                    <div className="flex gap-3 overflow-x-auto py-3 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] w-full">
+                      {[
+                        '/avatars/avatar-01.png', '/avatars/avatar-02.png', '/avatars/avatar-03.png', 
+                        '/avatars/avatar-04.png', '/avatars/avatar-05.png', '/avatars/avatar-06.png',
+                        '/avatars/avatar-07.png', '/avatars/avatar-08.png', '/avatars/avatar-09.png',
+                        '/avatars/avatar-10.png', '/avatars/avatar-11.png', '/avatars/avatar-12.png'
+                      ].map((url, idx) => (
+                        <img 
+                          key={idx} src={url} alt={`Avatar ${idx}`} 
+                          onClick={() => {
+                            setAvatarFile(null);
+                            setAvatarPreview(url);
+                          }}
+                          className={`w-16 h-16 rounded-full object-cover cursor-pointer transition-all shrink-0 border-2 ${avatarPreview === url ? 'border-[#de23ff] scale-105 shadow-[0_0_10px_rgba(222,35,255,0.5)]' : 'border-transparent hover:border-gray-500'}`}
+                        />
+                      ))}
+                    </div>
+
+                    {/* Right Gradient & Arrow */}
+                    <div className="absolute top-0 right-0 bottom-0 w-12 bg-gradient-to-l from-[#0f0d23] to-transparent pointer-events-none flex items-center justify-end z-10">
+                      <button 
+                        type="button" 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.currentTarget.parentElement.previousElementSibling.scrollBy({ left: 150, behavior: 'smooth' });
+                        }} 
+                        className="pointer-events-auto outline-none text-gray-400 hover:text-white transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                      </button>
                     </div>
                   </div>
-                  <input type="file" accept="image/png, image/jpeg, image/webp" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-                  
-                  <div className="flex-1">
-                    <label className="text-gray-300 text-sm mb-1 block">Display Name</label>
-                    <input 
-                      type="text" 
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      className="w-full bg-[#cecefb]/5 border border-transparent focus:border-[#a8b5db]/30 rounded-lg px-4 py-3 text-white outline-none transition-colors"
-                    />
+
+                  <div className="flex items-center gap-6">
+                    <div 
+                      className="w-20 h-20 rounded-full border-2 border-gray-700 bg-[#030014] overflow-hidden cursor-pointer flex items-center justify-center hover:border-[#de23ff] transition-colors relative group shrink-0"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-gray-500 text-sm">Upload</span>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center">
+                        <span className="text-xs font-semibold text-white">Upload</span>
+                      </div>
+                    </div>
+                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+                    <p className="text-sm text-gray-500">Click to upload a custom image from your device (Max 2MB).</p>
                   </div>
                 </div>
 
                 <button 
-                  type="submit" 
-                  disabled={isLoading}
+                  type="submit" disabled={isLoading}
                   className="bg-gray-800 text-white font-semibold py-2.5 px-6 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center min-w-[140px]"
                 >
                   {isLoading ? <Spinner /> : 'Save Profile'}

@@ -24,35 +24,37 @@ export const loginWithGoogle = () => {
     account.createOAuth2Session(OAuthProvider.Google, window.location.origin, window.location.origin);
 }
 
-export const registerUser = async (email, password, displayName, avatarFile = null) => {
+export const registerUser = async (email, password, name, avatarFile = null, preMadeAvatarUrl = null) => {
     try {
-        // 1. Create the auth account
-        const userAccount = await account.create(ID.unique(), email, password, displayName);
-        
-        // 2. LOG THEM IN IMMEDIATELY (This fixes the permission error!)
+        const authAccount = await account.create(ID.unique(), email, password, name);
         await account.createEmailPasswordSession(email, password);
-        
-        let avatarUrl = '/default-avatar.png'; // Make sure you have a default-avatar.png in your public folder
-        
-        // 3. Upload custom avatar if provided (Now they have permission to do this)
+
+        let finalAvatarUrl = '/no-movie.png'; 
         if (avatarFile) {
-            const uploadedFile = await storage.createFile(AVATARS_BUCKET_ID, ID.unique(), avatarFile);
-            avatarUrl = storage.getFileView(AVATARS_BUCKET_ID, uploadedFile.$id).toString();
+            const uploadedFile = await storage.createFile(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, ID.unique(), avatarFile);
+            finalAvatarUrl = storage.getFileView(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, uploadedFile.$id).toString();
+        } else if (preMadeAvatarUrl) {
+            // FIX: Converts '/avatars/...' into 'http://localhost:5173/avatars/...' so Appwrite accepts it!
+            finalAvatarUrl = new URL(preMadeAvatarUrl, window.location.origin).toString();
         }
 
-        // 4. Create the Profile document to store the extra info (Now they have permission to do this)
-        await database.createDocument(DATABASE_ID, PROFILES_COLLECTION_ID, ID.unique(), {
-            user_id: userAccount.$id,
-            display_name: displayName,
-            avatar_url: avatarUrl
-        });
+        await database.createDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID, 
+            import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID, 
+            ID.unique(), 
+            {
+                user_id: authAccount.$id,
+                display_name: name,
+                avatar_url: finalAvatarUrl
+            }
+        );
 
-        return userAccount;
+        return authAccount;
     } catch (error) {
         console.error("Registration error:", error);
         throw error;
     }
-}
+};
 
 export const loginWithEmail = async (email, password) => {
     try {
@@ -90,6 +92,19 @@ export const getCurrentUserProfile = async () => {
         return null;
     }
 }
+
+// --- LOGIN FUNCTIONS ---
+
+export const loginUser = async (email, password) => {
+    try {
+        // Appwrite uses createEmailPasswordSession to log an existing user in
+        const session = await account.createEmailPasswordSession(email, password);
+        return session;
+    } catch (error) {
+        console.error("Error logging in:", error);
+        throw error; // Throws error to the AuthModal to display in the red box
+    }
+};
 
 // ==========================================
 // 2. USER MOVIE TRACKING
@@ -214,27 +229,19 @@ export const getTrendingMovies = async () => {
 // 4. ACCOUNT MANAGEMENT
 // ==========================================
 
-export const updateUserProfile = async (userId, newName, avatarFile = null) => {
+export const updateUserProfile = async (userId, newName, avatarFile = null, preMadeAvatarUrl = null) => {
     try {
-        // 1. Update the base Auth account name
         await account.updateName(newName);
-
         let updateData = { display_name: newName };
 
-        // 2. Upload new avatar if provided
         if (avatarFile) {
-            const uploadedFile = await storage.createFile(
-                import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, 
-                ID.unique(), 
-                avatarFile
-            );
-            updateData.avatar_url = storage.getFileView(
-                import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, 
-                uploadedFile.$id
-            ).toString();
+            const uploadedFile = await storage.createFile(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, ID.unique(), avatarFile);
+            updateData.avatar_url = storage.getFileView(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, uploadedFile.$id).toString();
+        } else if (preMadeAvatarUrl) {
+            // FIX: Same absolute URL conversion here!
+            updateData.avatar_url = new URL(preMadeAvatarUrl, window.location.origin).toString();
         }
 
-        // 3. Check if the user already has a Profile document
         const existingProfile = await database.listDocuments(
             import.meta.env.VITE_APPWRITE_DATABASE_ID, 
             import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID, 
@@ -242,7 +249,6 @@ export const updateUserProfile = async (userId, newName, avatarFile = null) => {
         );
 
         if (existingProfile.documents.length > 0) {
-            // Document exists -> UPDATE IT
             return await database.updateDocument(
                 import.meta.env.VITE_APPWRITE_DATABASE_ID, 
                 import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID, 
@@ -250,9 +256,8 @@ export const updateUserProfile = async (userId, newName, avatarFile = null) => {
                 updateData
             );
         } else {
-            // Document doesn't exist (Google user) -> CREATE IT
             updateData.user_id = userId;
-            if (!updateData.avatar_url) updateData.avatar_url = '/default-avatar.png';
+            if (!updateData.avatar_url) updateData.avatar_url = '/no-movie.png';
             
             return await database.createDocument(
                 import.meta.env.VITE_APPWRITE_DATABASE_ID, 
@@ -272,6 +277,31 @@ export const updateUserPassword = async (newPassword, oldPassword) => {
         return await account.updatePassword(newPassword, oldPassword);
     } catch (error) {
         console.error("Error updating password:", error);
+        throw error;
+    }
+};
+
+// --- PASSWORD RECOVERY ---
+
+export const sendPasswordRecovery = async (email) => {
+    try {
+        // Sends an email with a link pointing back to your website
+        return await account.createRecovery(
+            email,
+            `${window.location.origin}/` 
+        );
+    } catch (error) {
+        console.error("Error sending recovery email:", error);
+        throw error;
+    }
+};
+
+export const confirmPasswordRecovery = async (userId, secret, newPassword) => {
+    try {
+        // Uses the secret from the URL to authorize the password change
+        return await account.updateRecovery(userId, secret, newPassword, newPassword);
+    } catch (error) {
+        console.error("Error confirming recovery:", error);
         throw error;
     }
 };

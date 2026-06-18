@@ -8,6 +8,7 @@ import MovieModal from './components/MovieModal';
 import { getTrendingMovies, updateSearchCount, getCurrentUserProfile, logoutUser, getUserMovies, toggleUserMovie } from './appwrite';
 import AuthModal from './components/AuthModal';
 import ProfileModal from './components/ProfileModal';
+import ResetPasswordModal from './components/ResetPasswordModal';
 
 const API_BASE_URL = 'https://api.themoviedb.org/3';
 
@@ -63,6 +64,8 @@ const App = () => {
 
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  const [recoveryData, setRecoveryData] = useState(null);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -131,6 +134,19 @@ const App = () => {
     handleTrendingScroll();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Check for Password Recovery URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('userId');
+    const secret = urlParams.get('secret');
+
+    if (userId && secret) {
+      setRecoveryData({ userId, secret });
+      // Clean the URL so it looks normal again
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   const scroll = (direction) => {
@@ -344,27 +360,31 @@ console.log(trendingMovies);
                   </span>
                 </button>
 
-                {/* Dropdown Menu */}
-                {isDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden animate-fade-in z-50">
-                    <button 
-                      onClick={() => {
-                        setIsDropdownOpen(false);
-                        setIsProfileModalOpen(true);
-                      }}
-                      className="text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-                    >
-                      Account Settings
-                    </button>
-                    <div className="h-px w-full bg-gray-800 my-1"></div>
-                    <button 
-                      onClick={handleLogout}
-                      className="text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                )}
+                {/* Dropdown Menu - Notice we removed the {isDropdownOpen && ( wrapper! */}
+                <div 
+                  className={`absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden z-50 origin-top-right transition-all duration-200 ease-out ${
+                    isDropdownOpen 
+                      ? 'opacity-100 scale-100 visible pointer-events-auto' 
+                      : 'opacity-0 scale-95 invisible pointer-events-none'
+                  }`}
+                >
+                  <button 
+                    onClick={() => {
+                      setIsDropdownOpen(false);
+                      setIsProfileModalOpen(true);
+                    }}
+                    className="text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                  >
+                    Account Settings
+                  </button>
+                  <div className="h-px w-full bg-gray-800 my-1"></div>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                  >
+                    Log Out
+                  </button>
+                </div>
               </div>
             ) : (
               <button 
@@ -615,6 +635,18 @@ console.log(trendingMovies);
             const updatedUser = await getCurrentUserProfile();
             setCurrentUser(updatedUser);
           }}
+        />
+      )}
+
+      {/* Password Recovery Modal */}
+      {recoveryData && (
+        <ResetPasswordModal 
+          userId={recoveryData.userId} 
+          secret={recoveryData.secret} 
+          onClose={() => {
+            setRecoveryData(null);
+            setIsAuthModalOpen(true); // Pop open the login window for them
+          }} 
         />
       )}
 
