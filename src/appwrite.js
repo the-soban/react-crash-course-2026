@@ -24,47 +24,6 @@ export const loginWithGoogle = () => {
     account.createOAuth2Session(OAuthProvider.Google, window.location.origin, window.location.origin);
 }
 
-export const registerUser = async (email, password, name, avatarFile = null, preMadeAvatarUrl = null) => {
-    try {
-        const authAccount = await account.create(ID.unique(), email, password, name);
-        await account.createEmailPasswordSession(email, password);
-
-        let finalAvatarUrl = '/no-movie.png'; 
-        if (avatarFile) {
-            const uploadedFile = await storage.createFile(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, ID.unique(), avatarFile);
-            finalAvatarUrl = storage.getFileView(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, uploadedFile.$id).toString();
-        } else if (preMadeAvatarUrl) {
-            // FIX: Converts '/avatars/...' into 'http://localhost:5173/avatars/...' so Appwrite accepts it!
-            finalAvatarUrl = new URL(preMadeAvatarUrl, window.location.origin).toString();
-        }
-
-        await database.createDocument(
-            import.meta.env.VITE_APPWRITE_DATABASE_ID, 
-            import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID, 
-            ID.unique(), 
-            {
-                user_id: authAccount.$id,
-                display_name: name,
-                avatar_url: finalAvatarUrl
-            }
-        );
-
-        return authAccount;
-    } catch (error) {
-        console.error("Registration error:", error);
-        throw error;
-    }
-};
-
-export const loginWithEmail = async (email, password) => {
-    try {
-        return await account.createEmailPasswordSession(email, password);
-    } catch (error) {
-        console.error("Login error:", error);
-        throw error;
-    }
-}
-
 export const logoutUser = async () => {
     try {
         return await account.deleteSession('current');
@@ -93,16 +52,62 @@ export const getCurrentUserProfile = async () => {
     }
 }
 
+export const registerUser = async (email, password, name, avatarFile = null, preMadeAvatarUrl = null) => {
+    try {
+        // --- THE SESSION SQUEEGEE ---
+        // Silently wipe any stuck ghost sessions before we try to register
+        try {
+            await account.deleteSession('current');
+        } catch (e) {
+            // Ignore if no session exists
+        }
+
+        const authAccount = await account.create(ID.unique(), email, password, name);
+        await account.createEmailPasswordSession(email, password);
+
+        let finalAvatarUrl = '/no-movie.png'; 
+        if (avatarFile) {
+            const uploadedFile = await storage.createFile(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, ID.unique(), avatarFile);
+            finalAvatarUrl = storage.getFileView(import.meta.env.VITE_APPWRITE_AVATARS_BUCKET_ID, uploadedFile.$id).toString();
+        } else if (preMadeAvatarUrl) {
+            finalAvatarUrl = new URL(preMadeAvatarUrl, window.location.origin).toString();
+        }
+
+        await database.createDocument(
+            import.meta.env.VITE_APPWRITE_DATABASE_ID, 
+            import.meta.env.VITE_APPWRITE_PROFILES_COLLECTION_ID, 
+            ID.unique(), 
+            {
+                user_id: authAccount.$id,
+                display_name: name,
+                avatar_url: finalAvatarUrl
+            }
+        );
+
+        return authAccount;
+    } catch (error) {
+        console.error("Registration error:", error);
+        throw error;
+    }
+};
+
 // --- LOGIN FUNCTIONS ---
 
 export const loginUser = async (email, password) => {
     try {
-        // Appwrite uses createEmailPasswordSession to log an existing user in
+        // --- THE SESSION SQUEEGEE ---
+        // Silently wipe any stuck ghost sessions before we log in
+        try {
+            await account.deleteSession('current');
+        } catch (e) {
+            // Ignore if no session exists
+        }
+
         const session = await account.createEmailPasswordSession(email, password);
         return session;
     } catch (error) {
         console.error("Error logging in:", error);
-        throw error; // Throws error to the AuthModal to display in the red box
+        throw error; 
     }
 };
 

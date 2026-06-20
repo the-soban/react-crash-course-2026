@@ -3,8 +3,8 @@ import { updateUserProfile, updateUserPassword } from '../appwrite';
 import MovieCard from './MovieCard';
 import Spinner from './Spinner';
 
-const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfileUpdate, onMovieSelect }) => {
-  const [activeTab, setActiveTab] = useState('settings'); // 'settings', 'saved', 'watched', 'liked', 'disliked'
+const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfileUpdate, onMovieSelect, initialTab = 'settings' }) => {
+  const [activeTab, setActiveTab] = useState(initialTab); // 'settings', 'saved', 'watched', 'liked', 'disliked'
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -14,7 +14,7 @@ const ProfileModal = ({ currentUser, onClose, userMovies, onToggleMovie, onProfi
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.profile?.avatar_url || null);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
-  
+
   const fileInputRef = useRef(null);
 
   useEffect(() => {

@@ -107,6 +107,7 @@ const MovieCard = ({ movie, onClick, isModalCard, userMovies = [], onToggleMovie
         )}
       </div>
 
+      {/* Content:   */}
       <div className="mt-4">
         <h3>{title}</h3>
         <div className="content">
@@ -120,6 +121,16 @@ const MovieCard = ({ movie, onClick, isModalCard, userMovies = [], onToggleMovie
           <p className="year">{release_date ? release_date.split('-')[0] : 'N/A'}</p>
         </div>
         {genreText && <p className="text-sm text-gray-400 mt-1">{genreText}</p>}
+
+        {/* --- NEW: View Details Link with Diagonal Arrow --- */}
+        <div className="mt-4 flex items-center justify-between text-sm">
+           <span className="text-white font-medium flex items-center gap-1 group-hover:text-[#de23ff] transition-colors">
+              View Details
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 19.5 15-15m0 0H8.25m11.25 0v11.25" />
+              </svg>
+           </span>
+        </div>
       </div>
     </div>
   );

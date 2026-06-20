@@ -60,12 +60,14 @@ const App = () => {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [initialProfileTab, setInitialProfileTab] = useState('settings');
   const [userMovies, setUserMovies] = useState([]); // Holds the user's tracked movies
 
   const [isNavVisible, setIsNavVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
   const [recoveryData, setRecoveryData] = useState(null);
+
 
   useEffect(() => {
     const checkUser = async () => {
@@ -322,7 +324,7 @@ console.log(trendingMovies);
         {/* The progressive blur background layer we made in CSS */}
         <div className="progressive-nav"></div>
 
-        {/* Navbar Content: Logo Left, Profile Right */}
+        {/* Navbar Content: Logo Left, Links & Profile Right */}
         <div className="max-w-7xl mx-auto px-5 sm:px-10 pt-4 sm:pt-6 flex justify-between items-center relative z-10">
           
           <img 
@@ -332,68 +334,107 @@ console.log(trendingMovies);
             onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}
           />
 
-          {/* User Profile / Login Button - Now cleanly aligned to the right! */}
-          <div>
-            {currentUser ? (
-              <div className="relative">
+          {/* Right Side Container: Nav Links + Profile Button */}
+          <div className="flex items-center gap-4 sm:gap-8">
+            
+            {/* DESKTOP NAV LINKS (Hidden on Mobile) */}
+            {currentUser && (
+              <div className="hidden sm:flex items-center gap-6 text-sm font-semibold">
                 <button 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity bg-[#0f0d23]/80 backdrop-blur-sm border border-gray-800 rounded-full pl-3 sm:pl-2 pr-3 sm:pr-4 py-1"
+                  onClick={() => { setInitialProfileTab('saved'); setIsProfileModalOpen(true); }}
+                  className="text-gray-300 text-sm font-normal cursor-pointer hover:text-white transition-colors"
                 >
-                  {/* NEW: 3-dots menu icon (Mobile Only) */}
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    className="h-5 w-5 text-gray-400 block sm:hidden" 
-                    viewBox="0 0 20 20" 
-                    fill="currentColor"
-                  >
-                    <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                  </svg>
-
-                  <img 
-                    src={currentUser.profile?.avatar_url || '/no-movie.png'} 
-                    alt="Profile" 
-                    className="w-8 h-8 rounded-full object-cover border border-[#de23ff]"
-                  />
-                  <span className="text-sm font-semibold text-white hidden sm:block">
-                    {currentUser.profile?.display_name || currentUser.name || 'My Profile'}
-                  </span>
+                  My List
                 </button>
-
-                {/* Dropdown Menu - Notice we removed the {isDropdownOpen && ( wrapper! */}
-                <div 
-                  className={`absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden z-50 origin-top-right transition-all duration-200 ease-out ${
-                    isDropdownOpen 
-                      ? 'opacity-100 scale-100 visible pointer-events-auto' 
-                      : 'opacity-0 scale-95 invisible pointer-events-none'
-                  }`}
+                <button 
+                  onClick={() => { setInitialProfileTab('watched'); setIsProfileModalOpen(true); }}
+                  className="text-gray-300 text-sm font-normal cursor-pointer hover:text-white transition-colors"
                 >
-                  <button 
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsProfileModalOpen(true);
-                    }}
-                    className="text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
-                  >
-                    Account Settings
-                  </button>
-                  <div className="h-px w-full bg-gray-800 my-1"></div>
-                  <button 
-                    onClick={handleLogout}
-                    className="text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
-                  >
-                    Log Out
-                  </button>
-                </div>
+                  Watched
+                </button>
               </div>
-            ) : (
-              <button 
-                onClick={() => setIsAuthModalOpen(true)}
-                className="bg-[#0f0d23]/80 backdrop-blur-sm border border-[#de23ff] text-[#cecefb] hover:bg-[#de23ff] hover:text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm shadow-[0_0_15px_rgba(222,35,255,0.2)] hover:shadow-[0_0_20px_rgba(222,35,255,0.4)]"
-              >
-                Sign In
-              </button>
             )}
+
+            {/* User Profile / Login Button */}
+            <div>
+              {currentUser ? (
+                <div className="relative">
+                  <button 
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-2 sm:gap-3 hover:opacity-80 transition-opacity bg-[#0f0d23]/80 backdrop-blur-sm border border-gray-800 rounded-full pl-3 sm:pl-2 pr-3 sm:pr-4 py-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 block sm:hidden" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                    </svg>
+                    <img 
+                      src={currentUser.profile?.avatar_url || '/no-movie.png'} 
+                      alt="Profile" 
+                      className="w-8 h-8 rounded-full object-cover border border-[#de23ff]"
+                    />
+                    <span className="text-sm font-semibold text-white hidden sm:block">
+                      {currentUser.profile?.display_name || currentUser.name || 'My Profile'}
+                    </span>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  <div 
+                    className={`absolute right-0 mt-2 w-48 bg-[#0f0d23] border border-gray-800 rounded-xl shadow-2xl py-2 flex flex-col overflow-hidden z-50 origin-top-right transition-all duration-200 ease-out ${
+                      isDropdownOpen 
+                        ? 'opacity-100 scale-100 visible pointer-events-auto' 
+                        : 'opacity-0 scale-95 invisible pointer-events-none'
+                    }`}
+                  >
+                    <button 
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setInitialProfileTab('settings');
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      Account Settings
+                    </button>
+
+                    {/* MOBILE ONLY NAV LINKS (Hidden on Desktop) */}
+                    <button 
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setInitialProfileTab('saved');
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="block sm:hidden text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      My List
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setInitialProfileTab('watched');
+                        setIsProfileModalOpen(true);
+                      }}
+                      className="block sm:hidden text-left px-4 py-3 text-sm text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+                    >
+                      Watched Movies
+                    </button>
+
+                    <div className="h-px w-full bg-gray-800 my-1"></div>
+                    <button 
+                      onClick={handleLogout}
+                      className="text-left px-4 py-3 text-sm text-red-400 hover:bg-gray-800 hover:text-red-300 transition-colors"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="bg-[#0f0d23]/80 backdrop-blur-sm border border-[#de23ff] text-[#cecefb] hover:bg-[#de23ff] hover:text-white font-semibold py-2 px-6 rounded-full transition-colors text-sm shadow-[0_0_15px_rgba(222,35,255,0.2)] hover:shadow-[0_0_20px_rgba(222,35,255,0.4)]"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -635,6 +676,7 @@ console.log(trendingMovies);
             const updatedUser = await getCurrentUserProfile();
             setCurrentUser(updatedUser);
           }}
+          initialTab={initialProfileTab} /* NEW PROP ADDED HERE */
         />
       )}
 
